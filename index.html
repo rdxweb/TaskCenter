@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Earnings</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+}
+
+#app {
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.hidden {
+    display: none;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+input, select, button {
+    margin: 10px 0;
+    padding: 10px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Login Section -->
+        <div id="login-section" class="hidden">
+            <h2>Login</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+            <p><a href="#" id="forgot-password-link">Forgot Password?</a> | <a href="#" id="create-account-link">Create Account</a></p>
+        </div>
+
+        <!-- Register Section -->
+        <div id="register-section" class="hidden">
+            <h2>Create Account</h2>
+            <form id="register-form">
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Password" required>
+                <button type="submit">Register</button>
+            </form>
+            <p><a href="#" id="login-link">Already have an account? Login</a></p>
+        </div>
+
+        <!-- Forgot Password Section -->
+        <div id="forgot-password-section" class="hidden">
+            <h2>Reset Password</h2>
+            <form id="forgot-password-form">
+                <input type="email" id="reset-email" placeholder="Email" required>
+                <button type="submit">Reset Password</button>
+            </form>
+            <p><a href="#" id="back-to-login-link">Back to Login</a></p>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="hidden">
+            <h2>Welcome, <span id="user-email"></span></h2>
+            <p>Your earnings: $<span id="earnings">0</span></p>
+            <button id="earn-button">Complete Task (Earn $1)</button>
+            <h3>Withdraw</h3>
+            <form id="withdraw-form">
+                <input type="number" id="withdraw-amount" placeholder="Amount to Withdraw" min="10" required>
+                <select id="withdraw-method" required>
+                    <option value="" disabled selected>Select Method</option>
+                    <option value="binance">Binance</option>
+                    <option value="bitget">Bitget</option>
+                    <option value="bybit">Bybit</option>
+                    <option value="bkash">Bkash</option>
+                    <option value="nagat">Nagat</option>
+                </select>
+                <input type="text" id="withdraw-address" placeholder="Address/Phone Number" required>
+                <button type="submit">Withdraw</button>
+            </form>
+            <button id="logout-button">Logout</button>
+        </div>
+    </div>
+    <script>
+    // User data management
+const users = JSON.parse(localStorage.getItem('users')) || {};
+let currentUser = localStorage.getItem('currentUser');
+
+// DOM Elements
+const loginSection = document.getElementById('login-section');
+const registerSection = document.getElementById('register-section');
+const forgotPasswordSection = document.getElementById('forgot-password-section');
+const dashboardSection = document.getElementById('dashboard-section');
+
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+const forgotPasswordForm = document.getElementById('forgot-password-form');
+const withdrawForm = document.getElementById('withdraw-form');
+
+const userEmailDisplay = document.getElementById('user-email');
+const earningsDisplay = document.getElementById('earnings');
+const earnButton = document.getElementById('earn-button');
+const logoutButton = document.getElementById('logout-button');
+
+// Show specific section
+function showSection(section) {
+    [loginSection, registerSection, forgotPasswordSection, dashboardSection].forEach(s => s.classList.add('hidden'));
+    section.classList.remove('hidden');
+}
+
+// Update dashboard
+function updateDashboard() {
+    if (currentUser) {
+        const user = users[currentUser];
+        userEmailDisplay.textContent = currentUser;
+        earningsDisplay.textContent = user.earnings;
+        showSection(dashboardSection);
+    }
+}
+
+// Check login status
+if (currentUser) {
+    updateDashboard();
+} else {
+    showSection(loginSection);
+}
+
+// Event Listeners
+loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    if (users[email] && users[email].password === password) {
+        currentUser = email;
+        localStorage.setItem('currentUser', currentUser);
+        updateDashboard();
+    } else {
+        alert('Invalid email or password');
+    }
+});
+
+registerForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+
+    if (users[email]) {
+        alert('Account already exists');
+    } else {
+        users[email] = { password, earnings: 0 };
+        localStorage.setItem('users', JSON.stringify(users));
+        alert('Account created successfully');
+        showSection(loginSection);
+    }
+});
+
+forgotPasswordForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value;
+
+    if (users[email]) {
+        const newPassword = prompt('Enter a new password:');
+        if (newPassword) {
+            users[email].password = newPassword;
+            localStorage.setItem('users', JSON.stringify(users));
+            alert('Password reset successfully');
+            showSection(loginSection);
+        }
+    } else {
+        alert('User not found');
+    }
+});
+
+earnButton.addEventListener('click', () => {
+    users[currentUser].earnings += 0.02;
+    localStorage.setItem('users', JSON.stringify(users));
+    updateDashboard();
+});
+
+withdrawForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+    const method = document.getElementById('withdraw-method').value;
+    const address = document.getElementById('withdraw-address').value;
+
+    if (amount >= 10 && amount <= users[currentUser].earnings) {
+        users[currentUser].earnings -= amount;
+        localStorage.setItem('users', JSON.stringify(users));
+        alert(`Withdrawal of $${amount} via ${method} to ${address} requested`);
+        updateDashboard();
+    } else {
+        alert('Invalid withdrawal amount or insufficient balance');
+    }
+});
+
+logoutButton.addEventListener('click', () => {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    showSection(loginSection);
+});
+
+// Navigation Links
+document.getElementById('forgot-password-link').addEventListener('click', () => showSection(forgotPasswordSection));
+document.getElementById('create-account-link').addEventListener('click', () => showSection(registerSection));
+document.getElementById('login-link').addEventListener('click', () => showSection(loginSection));
+document.getElementById('back-to-login-link').addEventListener('click', () => showSection(loginSection));
+
+
+
+///////////////////////////
+const button5 = document.getElementById('earn-button');
+        const maxClicks = 5;
+        const disableForOneMinute = 220 * 1000; // 1 minute in milliseconds
+
+        // Function to initialize data from localStorage
+        function loadData() {
+            const clickCount = localStorage.getItem('clickCount');
+            const lastDisabledTime = localStorage.getItem('lastDisabledTime');
+            const lastDisableDuration = localStorage.getItem('lastDisableDuration');
+            const clickTapCount = localStorage.getItem('clickTapCount');
+
+            if (clickCount !== null) {
+                button5.textContent = `[Earn 0.1] OK: ${clickCount}`;
+            } else {
+                button5.textContent = 'Click me!';
+            }
+
+            if (clickTapCount !== null && clickTapCount >= maxClicks) {
+                // If 5 taps were reached, disable the button for 1 minute
+                if (lastDisabledTime !== null) {
+                    const timeElapsed = Date.now() - lastDisabledTime;
+                    if (timeElapsed < disableForOneMinute) {
+                        // If less than 1 minute has passed, disable the button
+                        button5.disabled = true;
+                        button5.classList.add('disabled');
+                        startTimer(Math.ceil((disableForOneMinute - timeElapsed) / 1000), 'Wait for 1 minute');
+                    } else {
+                        // 1 minute has passed, reset tap count and re-enable button
+                        resetState();
+                    }
+                }
+            } else if (lastDisabledTime !== null) {
+                const timeElapsed = Date.now() - lastDisabledTime;
+                if (timeElapsed < 0) {
+                    // If less than 30 seconds have passed, show the remaining time
+                    button5.disabled = true;
+                    button5.classList.add('disabled');
+                    startTimer(30 - Math.floor(timeElapsed / 1000), 'Please wait');
+                }
+            }
+        }
+
+        // Function to start the countdown timer and update button text
+        function startTimer(seconds, message) {
+            let timeLeft = seconds;
+            const interval = setInterval(() => {
+                timeLeft--;
+                button5.textContent = `${message}: ${timeLeft}s`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    enableButton();
+                }
+            }, 1000);
+        }
+
+        // Function to enable the button and reset its state
+        function enableButton() {
+            button5.disabled = false;
+            button5.classList.remove('disabled');
+            button5.textContent = `Clicked: ${localStorage.getItem('clickCount') || 0}`;
+        }
+
+        // Function to reset the state when 1 minute is completed after 5 taps
+        function resetState() {
+            localStorage.setItem('clickTapCount', 0); // Reset tap count after 1 minute
+            localStorage.removeItem('lastDisabledTime');
+            button5.disabled = false;
+            button5.classList.remove('disabled');
+            button5.textContent = `Clicked: ${localStorage.getItem('clickCount') || 0}`;
+        }
+
+        // Event listener for button click
+        button5.addEventListener('click', () => {
+            // Get current click count and update it
+            let clickCount = parseInt(localStorage.getItem('clickCount') || '0') + 1;
+            localStorage.setItem('clickCount', clickCount);
+
+            // Update button text with new click count
+            button5.textContent = `Clicked: ${clickCount}`;
+
+            // Increment tap count and check if it reaches 5
+            let clickTapCount = parseInt(localStorage.getItem('clickTapCount') || '0') + 1;
+            localStorage.setItem('clickTapCount', clickTapCount);
+
+            // If click count reaches 5, disable button for 1 minute
+            if (clickTapCount >= maxClicks) {
+                localStorage.setItem('lastDisabledTime', Date.now());
+                button5.disabled = true;
+                button5.classList.add('disabled');
+                startTimer(220, 'Wait for 1 minute');
+            } else {
+                // Otherwise, disable button for 30 seconds
+                localStorage.setItem('lastDisabledTime', Date.now());
+                button5.disabled = true;
+                button5.classList.add('disabled');
+                startTimer(20, 'Please wait');
+            }
+        });
+
+        // Initialize the button state when the page loads
+        loadData();
+///////////////////////////
+//////////visit////////////
+button5.addEventListener("click",function(){
+  window.location.src=open("https://www.google.com/");
+})
+//////////////////////////
+
+
+    </script>
+</body>
+</html>
